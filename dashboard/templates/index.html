@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartTrafficAI — Live Dashboard</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg:       #0a0d14;
+      --surface:  #111827;
+      --border:   #1f2937;
+      --accent:   #00d4ff;
+      --green:    #22c55e;
+      --yellow:   #eab308;
+      --red:      #ef4444;
+      --gray:     #6b7280;
+      --text:     #e5e7eb;
+      --subtext:  #9ca3af;
+      --font:     'Courier New', monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      min-height: 100vh;
+    }
+
+    /* ── Header ─────────────────────────────── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 28px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    header .logo {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: var(--accent);
+      letter-spacing: 2px;
+    }
+    header .logo span { color: var(--text); }
+    .status-bar {
+      display: flex; gap: 24px; font-size: 0.78rem; color: var(--subtext);
+    }
+    .status-bar .val { color: var(--accent); }
+    #conn-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--red); display: inline-block; margin-right: 6px;
+      transition: background 0.3s;
+    }
+    #conn-dot.live { background: var(--green); animation: pulse 1.2s infinite; }
+    @keyframes pulse {
+      0%,100% { opacity: 1; } 50% { opacity: 0.4; }
+    }
+
+    /* ── Grid ───────────────────────────────── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
+      padding: 24px 28px 0;
+    }
+
+    /* ── Signal Cards ───────────────────────── */
+    .signal-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    .signal-card.GREEN  { border-color: var(--green);  box-shadow: 0 0 12px #22c55e33; }
+    .signal-card.YELLOW { border-color: var(--yellow); box-shadow: 0 0 12px #eab30833; }
+    .signal-card.RED    { border-color: var(--red);    box-shadow: 0 0 12px #ef444433; }
+    .signal-card .lane-name {
+      font-size: 0.7rem; color: var(--subtext); letter-spacing: 2px;
+      text-transform: uppercase; margin-bottom: 8px;
+    }
+    .signal-card .signal-light {
+      font-size: 2rem; text-align: center; margin: 12px 0;
+    }
+    .signal-card .stat-row {
+      display: flex; justify-content: space-between;
+      font-size: 0.78rem; margin-top: 6px; color: var(--subtext);
+    }
+    .signal-card .stat-row .v { color: var(--text); }
+
+    /* ── Charts Row ─────────────────────────── */
+    .charts-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      padding: 16px 28px;
+    }
+    @media (max-width: 800px) { .charts-row { grid-template-columns: 1fr; } }
+    .chart-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+    }
+    .chart-box h3 {
+      font-size: 0.75rem;
+      color: var(--subtext);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    /* ── KPI Table ──────────────────────────── */
+    .kpi-section {
+      padding: 0 28px 28px;
+    }
+    .kpi-section h3 {
+      font-size: 0.75rem; color: var(--subtext);
+      letter-spacing: 2px; text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+    th {
+      text-align: left; padding: 10px 14px;
+      color: var(--subtext); border-bottom: 1px solid var(--border);
+      font-weight: normal; letter-spacing: 1px;
+    }
+    td {
+      padding: 10px 14px;
+      border-bottom: 1px solid #1a2233;
+      color: var(--text);
+    }
+    tr:hover td { background: #151e2e; }
+    .los-A { color: #22c55e; } .los-B { color: #86efac; }
+    .los-C { color: #fbbf24; } .los-D { color: #f97316; }
+    .los-E { color: #ef4444; } .los-F { color: #dc2626; font-weight: bold; }
+
+    /* ── Footer ─────────────────────────────── */
+    footer {
+      text-align: center; padding: 16px;
+      color: var(--gray); font-size: 0.72rem;
+      border-top: 1px solid var(--border);
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">SMART<span>TRAFFIC</span>AI</div>
+  <div class="status-bar">
+    <span><span id="conn-dot"></span><span id="conn-label">Disconnected</span></span>
+    <span>FPS <span class="val" id="fps-val">—</span></span>
+    <span>Frames <span class="val" id="frame-val">—</span></span>
+    <span>Violations <span class="val" id="viol-val" style="color:var(--red)">0</span></span>
+  </div>
+</header>
+
+<!-- Signal Cards -->
+<div class="grid" id="signal-grid"></div>
+
+<!-- Charts -->
+<div class="charts-row">
+  <div class="chart-box">
+    <h3>Flow Rate (veh/hr) per Lane</h3>
+    <canvas id="flow-chart" height="180"></canvas>
+  </div>
+  <div class="chart-box">
+    <h3>Current Occupancy per Lane</h3>
+    <canvas id="occ-chart" height="180"></canvas>
+  </div>
+</div>
+
+<!-- KPI Table -->
+<div class="kpi-section">
+  <h3>Level of Service Summary</h3>
+  <table id="kpi-table">
+    <thead>
+      <tr>
+        <th>Lane</th>
+        <th>Flow (vph)</th>
+        <th>Avg Speed (km/h)</th>
+        <th>Delay Est (s)</th>
+        <th>LOS</th>
+        <th>Green Time (s)</th>
+        <th>Total Count</th>
+      </tr>
+    </thead>
+    <tbody id="kpi-tbody"></tbody>
+  </table>
+</div>
+
+<footer>
+  SmartTrafficAI — Built on <a href="https://github.com/FYP-ITMS/Intelligent-Traffic-Management-System-using-Machine-Learning">FYP-ITMS</a>
+  + <a href="https://github.com/RoadwayVR/SimJamComputerVision">SimJam ComputerVision</a>
+</footer>
+
+<script>
+  // ── SocketIO ──────────────────────────────────
+  const socket = io();
+  const dot    = document.getElementById("conn-dot");
+  const label  = document.getElementById("conn-label");
+
+  socket.on("connect", () => {
+    dot.classList.add("live");
+    label.textContent = "Live";
+    fetch("/api/state").then(r => r.json()).then(applyState);
+  });
+  socket.on("disconnect", () => {
+    dot.classList.remove("live");
+    label.textContent = "Disconnected";
+  });
+  socket.on("state_update", applyState);
+
+  // ── Charts ────────────────────────────────────
+  const LANE_COLORS = ["#00d4ff","#22c55e","#eab308","#a78bfa","#f97316","#ec4899"];
+
+  let flowChart, occChart;
+  function initCharts(lanes) {
+    const fcCtx = document.getElementById("flow-chart").getContext("2d");
+    const ocCtx = document.getElementById("occ-chart").getContext("2d");
+    const defaults = {
+      plugins: { legend: { labels: { color: "#9ca3af", font: { family: "Courier New", size: 11 } } } },
+      scales: {
+        x: { ticks: { color: "#9ca3af" }, grid: { color: "#1f2937" } },
+        y: { ticks: { color: "#9ca3af" }, grid: { color: "#1f2937" } },
+      },
+    };
+    flowChart = new Chart(fcCtx, {
+      type: "bar",
+      data: { labels: lanes, datasets: [{ label: "vph", data: lanes.map(() => 0),
+        backgroundColor: LANE_COLORS.slice(0, lanes.length), borderRadius: 4 }] },
+      options: { ...defaults, animation: false },
+    });
+    occChart = new Chart(ocCtx, {
+      type: "doughnut",
+      data: { labels: lanes, datasets: [{ data: lanes.map(() => 0),
+        backgroundColor: LANE_COLORS.slice(0, lanes.length), borderWidth: 2,
+        borderColor: "#111827" }] },
+      options: { plugins: defaults.plugins, animation: false },
+    });
+  }
+
+  // ── State Renderer ────────────────────────────
+  const ICONS = { GREEN: "🟢", YELLOW: "🟡", RED: "🔴", ALL_RED: "⚫" };
+
+  function applyState(state) {
+    // Header
+    if (state.fps !== undefined) document.getElementById("fps-val").textContent = state.fps.toFixed(1);
+    if (state.frame_count !== undefined) document.getElementById("frame-val").textContent = state.frame_count;
+    if (state.violations_today !== undefined) document.getElementById("viol-val").textContent = state.violations_today;
+
+    const signals   = state.signal_states   || {};
+    const green_t   = state.green_times     || {};
+    const occupancy = state.zone_occupancy  || {};
+    const lanes = Object.keys(signals);
+
+    // Init charts once
+    if (!flowChart && lanes.length > 0) initCharts(lanes);
+
+    // Signal cards
+    const grid = document.getElementById("signal-grid");
+    grid.innerHTML = "";
+    lanes.forEach(lane => {
+      const st   = signals[lane] || "RED";
+      const occ  = occupancy[lane] || 0;
+      const gt   = green_t[lane]   || 0;
+      const card = document.createElement("div");
+      card.className = `signal-card ${st}`;
+      card.innerHTML = `
+        <div class="lane-name">${lane}</div>
+        <div class="signal-light">${ICONS[st] || "⚫"}</div>
+        <div class="stat-row"><span>State</span><span class="v">${st}</span></div>
+        <div class="stat-row"><span>Vehicles</span><span class="v">${occ}</span></div>
+        <div class="stat-row"><span>Green Alloc</span><span class="v">${gt.toFixed ? gt.toFixed(1) : gt}s</span></div>
+      `;
+      grid.appendChild(card);
+    });
+
+    // Charts update
+    if (flowChart) {
+      const kpis = state.latest_kpis || {};
+      const laneKpis = kpis.lanes || {};
+      flowChart.data.datasets[0].data = lanes.map(l => (laneKpis[l] || {}).flow_rate_vph || 0);
+      flowChart.update("none");
+      occChart.data.datasets[0].data = lanes.map(l => occupancy[l] || 0);
+      occChart.update("none");
+    }
+
+    // KPI Table
+    const kpis = (state.latest_kpis || {}).lanes || {};
+    const tbody = document.getElementById("kpi-tbody");
+    tbody.innerHTML = "";
+    lanes.forEach(lane => {
+      const k = kpis[lane] || {};
+      const los = k.los || "—";
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${lane}</td>
+        <td>${k.flow_rate_vph ?? "—"}</td>
+        <td>${k.avg_speed_kmph ?? "—"}</td>
+        <td>${k.delay_est_s ?? "—"}</td>
+        <td class="los-${los}">${los}</td>
+        <td>${k.green_time_s ?? "—"}</td>
+        <td>${k.cumulative_count ?? "—"}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+</script>
+</body>
+</html>
