@@ -274,10 +274,10 @@ timestamp, track_id, lane, class, speed_kmph, limit_kmph, over_by
 
 ## 👤 Author
 
-**Prasad** — Artificial Intelligence and Data Science (AI&DS), JSPM Narhe Technical Campus, Pune  
+- **Prasad** — Artificial Intelligence and Data Science (AI&DS), JSPM Narhe Technical Campus, Pune  
 GitHub: [@simple100boy](https://github.com/simple100boy)
-**Harshavardhan** -Artificial Intelligence and Data Science (AI&DS), JSPM Narhe Technical Campus, Pune
-**Manav** -Artificial Intelligence and Data Science (AI&DS), JSPM Narhe Technical Campus, Pune
-**Pragati** -Artificial Intelligence and Data Science (AI&DS), JSPM Narhe Technical Campus, Pune
-**Sakshi** -Artificial Intelligence and Data Science (AI&DS), JSPM Narhe Technical Campus, Pune
-**Piyush** -Artificial Intelligence and Data Science (AI&DS), JSPM Narhe Technical Campus, Pune
+- **Harshavardhan** -Artificial Intelligence and Data Science (AI&DS), JSPM Narhe Technical Campus, Pune
+- **Manav** -Artificial Intelligence and Data Science (AI&DS), JSPM Narhe Technical Campus, Pune
+- **Pragati** -Artificial Intelligence and Data Science (AI&DS), JSPM Narhe Technical Campus, Pune
+- **Sakshi** -Artificial Intelligence and Data Science (AI&DS), JSPM Narhe Technical Campus, Pune
+- **Piyush** -Artificial Intelligence and Data Science (AI&DS), JSPM Narhe Technical Campus, Pune
