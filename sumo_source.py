@@ -19,7 +19,7 @@ if os.path.exists(SUMO_HOME):
     sys.path.append(os.path.join(SUMO_HOME, "tools"))
 
 # ── Your exact SUMO config path ───────────────────────────────
-SUMO_CONFIG  = r"C:\sumo_traffic\config.sumocfg"
+SUMO_CONFIG  = r"C:\PRASAD\SKIILS\yolo ml model\Smarttraffic_ai\sumo_traffic\config.sumocfg"
 
 # ── Your junction ID (main intersection) ─────────────────────
 JUNCTION_ID  = "B"

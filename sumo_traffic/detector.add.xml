@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<additional>
+
+    <!-- Induction Loop Detectors — like speed cameras on roads -->
+    <!-- Outputs: vehicle count, speed, occupancy every 30 seconds -->
+
+    <inductionLoop id="sensor_AB"
+                   lane="AB_0"
+                   pos="100"
+                   freq="30"
+                   file="sensor_output.xml"/>
+
+    <inductionLoop id="sensor_BC"
+                   lane="BC_0"
+                   pos="100"
+                   freq="30"
+                   file="sensor_output.xml"/>
+
+    <inductionLoop id="sensor_DB"
+                   lane="DB_0"
+                   pos="50"
+                   freq="30"
+                   file="sensor_output.xml"/>
+
+    <inductionLoop id="sensor_BE"
+                   lane="BE_0"
+                   pos="50"
+                   freq="30"
+                   file="sensor_output.xml"/>
+
+</additional>

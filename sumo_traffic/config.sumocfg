@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <input>
+        <net-file         value="map.net.xml"/>
+        <route-files      value="vehicles.rou.xml"/>
+        <additional-files value="detector.add.xml"/>
+        <gui-settings-file value="gui-settings.xml"/>
+    </input>
+
+    <time>
+        <begin       value="0"/>
+        <end         value="300"/>
+        <step-length value="0.1"/>
+    </time>
+
+    <processing>
+        <ignore-junction-blocker value="10"/>
+        <time-to-teleport        value="60"/>
+        <lateral-resolution      value="0.8"/>
+    </processing>
+
+    <output>
+        <summary-output value="summary.xml"/>
+    </output>
+
+</configuration>
