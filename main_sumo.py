@@ -90,13 +90,13 @@ def run(args):
             green_times = signal_ctrl.get_green_times()
 
             # Find busiest lane → give it green in SUMO
-            if occupancy:
-                busiest = max(occupancy, key=occupancy.get)
-                if occupancy[busiest] > 0:
-                    sumo.set_signal_timing(
-                        green_lane = busiest,
-                        duration   = green_times.get(busiest, 20)
-                    )
+            #if occupancy:
+             #   busiest = max(occupancy, key=occupancy.get)
+             #   if occupancy[busiest] > 0:
+                   # sumo.set_signal_timing(
+                    #    green_lane = busiest,
+                    #    duration   = green_times.get(busiest, 20)
+                    #)
 
             # ── Speed violation detection ─────────────────────
             for v in vehicles:

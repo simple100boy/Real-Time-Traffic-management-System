@@ -207,30 +207,41 @@ class SUMOSource:
 
     # ── Push optimized green times back to SUMO ──────────────
     def set_signal_timing(self, green_lane: str, duration: float):
-        """
-        Called by signal controller to update SUMO signals.
-        Closes the loop: ML output → SUMO input.
-        Phase 0 = West+East green
-        Phase 2 = North+South green
-        """
+        import time
+
         lane_to_phase = {
             "West":  0,
             "East":  0,
             "North": 2,
             "South": 2,
         }
+
         phase = lane_to_phase.get(green_lane, 0)
+
         try:
-            current = traci.trafficlight.getPhase(JUNCTION_ID)
-            # Only change if not in yellow/clearance
-            if current in [0, 2]:
-                traci.trafficlight.setPhase(JUNCTION_ID, phase)
-                traci.trafficlight.setPhaseDuration(
-                    JUNCTION_ID,
-                    max(10, min(60, duration))
-                )
+            current_phase = traci.trafficlight.getPhase(JUNCTION_ID)
+
+            # 🚫 If already same → do nothing
+            if current_phase == phase:
+             return
+
+            # 🚦 YELLOW PHASE
+            traci.trafficlight.setPhase(JUNCTION_ID, 1)
+            time.sleep(2)
+
+            # 🚦 ALL RED
+            traci.trafficlight.setPhase(JUNCTION_ID, 3)
+            time.sleep(2)
+
+            # ✅ FINAL GREEN
+            traci.trafficlight.setPhase(JUNCTION_ID, phase)
+            traci.trafficlight.setPhaseDuration(
+                JUNCTION_ID,
+                max(10, min(60, duration))
+            )   
+
         except Exception as e:
-            pass
+             print("[SUMO ERROR]", e)
 
     # ── Simulation statistics ─────────────────────────────────
     def _compute_stats(self, vehicles: List[SUMOVehicle]) -> Dict:

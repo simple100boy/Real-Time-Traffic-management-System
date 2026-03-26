@@ -20,6 +20,9 @@ class SignalState:
 
 class SignalController:
     def __init__(self, lane_names: list):
+        self.current_lane = "West"
+        self.last_switch_time = time.time()
+        self.MIN_GREEN_TIME = 10
         self.lanes = lane_names
         self._states: Dict[str, str]  = {lane: SignalState.RED for lane in lane_names}
         self._green_times: Dict[str, float] = {lane: config.DEFAULT_GREEN for lane in lane_names}
@@ -83,25 +86,48 @@ class SignalController:
     # ── Main cycle loop ───────────────────────────────────────
     def _cycle_loop(self):
         while self._running:
+
             with self._lock:
                 emergency = self._emergency_lane
+                density_copy = dict(self._green_times)
+
                 if emergency:
                     self._emergency_lane = None
 
+            # 🚑 EMERGENCY OVERRIDE
             if emergency and emergency in self.lanes:
-                # Emergency overrides safety lock
                 self._serve_lane(emergency, override_time=config.MAX_GREEN_SECONDS)
-            else:
-                lane = self.lanes[self._phase_idx % len(self.lanes)]
-                with self._lock:
-                    green_t = self._green_times.get(lane, config.DEFAULT_GREEN)
+                continue
 
-                # ── SAFETY LOCK ───────────────────────────────
-                # Enforce minimum green time before switching
-                green_t = max(green_t, self._min_green_lock)
+            # 🔥 SELECT BEST LANE (density + fairness)
+            best_lane = max(density_copy, key=density_copy.get)
 
-                self._serve_lane(lane, override_time=green_t)
-                self._phase_idx += 1
+            # 🚫 PREVENT RAPID SWITCHING
+            if self._current_green is not None:
+                time_in_green = self.time_in_current_green()
+
+                # minimum green lock
+                if time_in_green < self._min_green_lock:
+                    best_lane = self._current_green
+
+                # 🔥 FAIRNESS: force change if too long
+                elif time_in_green > config.MAX_GREEN_SECONDS:
+                    # pick next best lane
+                    sorted_lanes = sorted(density_copy, key=density_copy.get, reverse=True)
+                    for lane in sorted_lanes:
+                        if lane != self._current_green:
+                            best_lane = lane
+                            break
+
+            # 🚦 GET GREEN TIME
+            with self._lock:
+                green_t = self._green_times.get(best_lane, config.DEFAULT_GREEN)
+
+            # ⏱ Ensure minimum lock
+            green_t = max(green_t, self._min_green_lock)
+
+            # 🚦 SERVE LANE
+            self._serve_lane(best_lane, override_time=green_t)
 
     def _serve_lane(self, lane: str, override_time: float):
         """Set one lane GREEN, all others RED, then transition."""

@@ -55,7 +55,7 @@ class EmergencyHandler:
             # Find which zone
             for lane in self.zm.zones:
                 occ = self.zm.occupancy.get(lane, 0)
-                if occ > 0:
+                if occ > 5:
                     self._flagged.add(d.track_id)
                     print(f"[Emergency] 🚨 Vehicle #{d.track_id} ({d.class_name}) "
                           f"@ {speed:.0f} km/h detected in {lane}")
